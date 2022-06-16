@@ -1,13 +1,16 @@
 {
   "name": "restapi",
   "version": "1.0.0",
-  "description": "this is aboudt restapi",
+  "description": "this is about restapi",
   "main": "index.js",
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js"
   },
-  "author": "",
+  "keywords": [
+    "node"
+  ],
+  "author": "developerfunnel",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.20.0",

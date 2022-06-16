@@ -1,37 +1,31 @@
 let express = require('express');
 let app = express();
+let bodyParser = require('body-parser');
+let cors = require('cors')
 let dotenv = require('dotenv');
-dotenv.config();
-let port = process.env.PORT || 9871;
+dotenv.config()
+let port = process.env.PORT || 9870;
 let mongo = require('mongodb');
 let MongoClient = mongo.MongoClient;
-// let mongoUrl = process.env.MongoUrl;
+// let mongoUrl = process.env.MonogUrl;
 let mongoUrl = process.env.MongoLiveUrl;
-let db;//db object 
+let db;
 
+//middleware (supporting lib)
+app.use(bodyParser.urlencoded({extended:true}))
+app.use(bodyParser.json())
+app.use(cors())
 
-app.get('/',(req,res)=>{
-    res.send('express server default');
+app.get('/',(req,res) => {
+    res.send('Express Server default')
 })
 
-// app.get('/products',(req,res) => {
-//   let categoryid = Number(req.query.categoryid);
-//   let query = {}
-//   if(categoryid){
-//     query = {category_id:categoryid}
-//   }
 
-//   db.collection('products').find(query).toArray((err,result) => {
-//     if(err) throw err;
-//     res.send(result)
-//   })
-// })
-// products based on category name
 app.get('/products',(req,res) => {
   let categoryname = req.query.categoryname
   let query = {}
   if(categoryname){
-    query = {category:categoryname}
+    query = {"categories.category_name":categoryname}
   }
 
   db.collection('products').find(query).toArray((err,result) => {
@@ -40,72 +34,76 @@ app.get('/products',(req,res) => {
   })
 })
 
+// app.get('/products',(req,res) => {
+//   db.collection('products').find().toArray((err,result) => {
+//     if(err) throw err;
+//     res.send(result)
+//   })
+// })
 
-//best selling products
-app.get('/bestsellingproducts',(req,res) => {
-    db.collection('products').find({$and:[{product_count:{$gt:1000}}]}).toArray((err,result) => {
+
+app.get('/items/:collections',(req,res) => {
+  db.collection(req.params.collections).find().toArray((err,result) => {
+    if(err) throw err;
+    res.send(result)
+  })
+})
+
+app.get('/location',(req,res) => {
+    db.collection('location').find().toArray((err,result) => {
       if(err) throw err;
       res.send(result)
     })
 })
 
-// sort products based on price and range
-
-app.get('/sortproductsonprice',(req,res) => {
-  let lcost = Number(req.query.lcost)
-  let hcost = Number(req.query.hcost)
-  console.log(lcost);
-  let query = {}
-  // if(lcost && hcost){
-  //   query={
-  //     // "Brands.brand_id":brand_id,
-  //     $and:[{Price:{$gt:lcost,$lt:hcost}}]
-  //   }
-  // }
-  // db.collection('products').find(query,{projection:{_id:0,product_name:1,Price:1}}).toArray((err,result) => {
-  //   if(err) throw err;
-  //   res.send(result)
-  // })
-  db.collection('products').find({$and:[{Price:{$gte:hcost,$lte:lcost}}]},{projection:{_id:0,product_name:1,Price:1}}).toArray((err,result) => {
-    if(err) throw err;
-    res.send(result)
- })
+app.get('/categories',(req,res) => {
+    db.collection('categories').find().toArray((err,result) => {
+      if(err) throw err;
+      res.send(result)
+    })
 })
 
-// filters
 
-app.get(`/filter/:category_id`,(req,res) => {
-  let sort = {Price:1}
-  let category_id = Number(req.params.category_id)
-  let brand_id = Number(req.query.brand_id)
+//best selling products
+app.get('/bestsellingproducts',(req,res) => {
+  db.collection('products').find({$and:[{product_count:{$gt:900}}]}).toArray((err,result) => {
+    if(err) throw err;
+    res.send(result)
+  })
+})
+
+app.get(`/filter/:categoryid`,(req,res) => {
+  let sort = {cost:1}
+  let categoryid = Number(req.params.categoryid)
+  let brandid = Number(req.query.brandid)
   let lcost = Number(req.query.lcost)
   let hcost = Number(req.query.hcost)
   let query = {}
   if(req.query.sort){
-    sort={Price:req.query.sort}
+    sort={cost:req.query.sort}
   }
 
-  if(lcost && hcost && category_id){
+  if(lcost && hcost && brandid){
     query={
-      "categories.category_id":category_id,
-      $and:[{Price:{$gt:lcost,$lt:hcost}}],
-      "Brands.brand_id":brand_id
+      "categories.category_id":categoryid,
+      $and:[{cost:{$gt:lcost,$lt:hcost}}],
+      "brands.brand_id":brandid
     }
   }
   else if(lcost && hcost){
     query={
-      "Brands.brand_id":brand_id,
-      $and:[{Price:{$gt:lcost,$lt:hcost}}]
+      "categories.category_id":categoryid,
+      $and:[{cost:{$gt:lcost,$lt:hcost}}]
     }
   }
-  else if(brand_id){
+  else if(brandid){
     query={
-      "categories.category_id":category_id,
-      "Brands.brand_id":brand_id
+      "categories.category_id":categoryid,
+      "brands.brand_id":brandid
     }
   }else{
     query={
-      "categories.category_id":category_id
+      "categories.category_id":categoryid
     }
   }
   db.collection('products').find(query).sort(sort).toArray((err,result) => {
@@ -114,16 +112,17 @@ app.get(`/filter/:category_id`,(req,res) => {
   })
 })
 
+// app.get('/details/:id',(req,res) => {
+//   let id = mongo.ObjectId(req.params.id)
+//   db.collection('restaurants').find({_id:id}).toArray((err,result) => {
+//     if(err) throw err;
+//     res.send(result)
+//   })
+// })
 
-
-// products details based on productid 
-app.get('/productdetails/:id',(req,res) => {
-  let productid =  mongo.ObjectId(req.params.id)
-  let query = {}
-  if(productid){
-    query = {_id:productid}
-  }
-  db.collection('products').find(query).toArray((err,result) => {
+app.get('/details/:id',(req,res) => {
+  let id = Number(req.params.id)
+  db.collection('products').find({product_id:id}).toArray((err,result) => {
     if(err) throw err;
     res.send(result)
   })
@@ -134,93 +133,103 @@ app.get('/relatedproductdetails/:pname',(req,res) => {
   let pname = req.params.pname;
   let query = {}
   if(pname){
-    query = {Brand:pname}
+    query = {"brands.brand_name":pname}
   }
   db.collection('products').find(query).toArray((err,result) => {
     if(err) throw err;
     res.send(result)
   })
 })
-
-
-// delete orders details based on id
-app.delete('/deleteOrder/:id',(req,res) => {
-  let oid =  mongo.ObjectId(req.params.id)
-  db.collection('orders').remove({_id:oid},(err,result) => {
-    if(err) throw err;
-    res.send('Order Deleted')
-  })
-})
-
-
-// app.get('/products',(req,res) => {
-//   db.collection('products').find().toArray((err,result) => {
+// app.get('/menu/:id',(req,res) => {
+//   let id = Number(req.params.id)
+//   db.collection('menu').find({restaurant_id:id}).toArray((err,result) => {
 //     if(err) throw err;
 //     res.send(result)
 //   })
 // })
 
-app.get('/category',(req,res) => {
-    db.collection('category').find().toArray((err,result) => {
-      if(err) throw err;
-      res.send(result)
-    })
-})
-
-// app.get('/restaurants',(req,res) => {
-//   let stateId = Number(req.query.stateId)
-//   let mealId = Number(req.query.mealId)
-//   let query = {}
-//   if(stateId && mealId){
-//     query = {state_id:stateId,'mealTypes.mealtype_id':mealId}
-//   }
-//   else if(stateId){
-//     query = {category_id:stateId}
-//   }else if(mealId){
-//     query = {'mealTypes.mealtype_id':mealId}
-//   }
-//   db.collection('restaurants').find(query).toArray((err,result) => {
-//     if(err) throw err;
-//     res.send(result)
-//   })
-// })
-
-
-
-app.get('/mealType',(req,res) => {
-  db.collection('mealType').find().toArray((err,result) => {
+app.get('/orders',(req,res) => {
+  let email = req.query.email;
+  let query = {}
+  if(email){
+    //query = {email:email}
+    query = {email}
+  }
+  db.collection('orders').find(query).toArray((err,result) => {
     if(err) throw err;
     res.send(result)
   })
 })
 
-// app.get('/restaurants',(req,res) => {
-//   let stateId = Number(req.query.stateId)
-//   let mealId = Number(req.query.mealId)
-//   let query = {}
-//   if(stateId && mealId){
-//     query = {state_id:stateId,'mealTypes.mealtype_id':mealId}
-//   }
-//   else if(stateId){
-//     query = {state_id:stateId}
-//   }else if(mealId){
-//     query = {'mealTypes.mealtype_id':mealId}
-//   }
-//   db.collection('restaurants').find(query).toArray((err,result) => {
-//     if(err) throw err;
-//     res.send(result)
-//   })
-// })
+//menu on basis user selected ids
+app.post('/menuItem',(req,res) => {
+  if(Array.isArray(req.body)){
+    db.collection('products').find({product_id:{$in:req.body}}).toArray((err,result) => {
+      if(err) throw err;
+      res.send(result)
+    })
+  }else{
+    res.send('Invalid Input')
+  }
+})
 
-//connection with db
-MongoClient.connect(mongoUrl,(err,client) => {
-    if (err) console.log('ERROR WHILE CONNECTING');
-    db = client.db('flipkart');
-    app.listen(port,(err)=>{
-        if (err) throw err;
-        console.log(`express server listing on port ${port}`);
-    
+app.post('/placeOrder',(req,res) => {
+  console.log(req.body)
+  db.collection('orders').insert(req.body,(err,result) => {
+    if(err) throw err;
+    res.send(result)
+  })
+})
+
+app.put('/updateOrder/:id',(req,res) => {
+    let oid = Number(req.params.id);
+    db.collection('orders').updateOne(
+      {orderId:oid},
+      {
+        $set:{
+          "status":req.body.status,
+          "bank_name":req.body.bank_name,
+          "date":req.body.date
+        }
+      },(err,result) => {
+        if(err) throw err;
+        res.send('Order Updated')
+      }
+    )
+})
+
+app.delete('/deleteOrder/:id',(req,res) => {
+    let oid =  mongo.ObjectId(req.params.id)
+    db.collection('orders').remove({_id:oid},(err,result) => {
+      if(err) throw err;
+      res.send('Order Deleted')
     })
 })
 
 
+//Connection with db
+MongoClient.connect(mongoUrl,(err,client) => {
+  if(err) console.log(`Error While Connecting`);
+  db = client.db('dummydb');
+  app.listen(port,(err) => {
+    if(err) throw err;
+    console.log(`Express Server listening on port ${port}`)
+  })
+})
+
+
+/*
+app.get('/restaurants/:id',(req,res) => {
+  let id = req.params.id;
+  let state = req.query.state
+  let country  = req.query.country
+  console.log(`>>>>>state>>>`,state)
+  console.log(`>>>>>country>>>`,country)
+  res.send(id)
+
+  // db.collection('restaurants').find().toArray((err,result) => {
+  //   if(err) throw err;
+  //   res.send(result)
+  // })
+})
+*/
