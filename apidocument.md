@@ -1,31 +1,39 @@
 //page1
 >list of products based on product name
 >>(Get)  http://localhost:9100/products?categoryname=Mobiles
+>>https://febapiedu.herokuapp.com/products?categoryname=Mobiles
 
 >list of menu items
 >>(Get) http://localhost:9100/categories
+https://febapiedu.herokuapp.com/categories
 
 >list of best selling products
 >>(Get) http://localhost:9100/bestsellingproducts
+https://febapiedu.herokuapp.com/bestsellingproducts
 
 
 //page2
 >filter products based on brand (Get)
 >>http://localhost:9100/filter/3?brandid=1
+https://febapiedu.herokuapp.com/filter/3?brandid=1
 
 >filter products based on price (Get)
 >>http://localhost:9100/filter/1?lcost=700&hcost=1200
+https://febapiedu.herokuapp.com/filter/1?lcost=700&hcost=1200
 
 >sort products based on price (Get)
 >>http://localhost:9100/filter/1?lcost=500&hcost=1200&sort=-1
+https://febapiedu.herokuapp.com/filter/1?lcost=500&hcost=1200&sort=-1
 
 
 //page3
 >details of the product based on id (Get)
 >>http://localhost:9100/details/1
+https://febapiedu.herokuapp.com/details/1
 
 >based on selected product display remaining products related to selected product brand name (Get)
 >>http://localhost:9100/relatedproductdetails/Oppoo
+https://febapiedu.herokuapp.com/relatedproductdetails/Oppoo
 
 //page4
 > products details (selected items)
